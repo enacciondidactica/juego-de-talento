@@ -5,7 +5,7 @@ import { createServer as createViteServer } from 'vite';
 import { DEFAULT_APP_CONFIG, DEFAULT_QUIZ_QUESTIONS, DEFAULT_PAIR_CARDS, DEFAULT_SWIPE_CARDS, DEFAULT_ROULETTE_SLICES, DEFAULT_CHEST_OPTIONS } from './src/lib/gameData';
 import { AppConfig, GameResult, Participant, DailyStats } from './src/types';
 
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
@@ -91,12 +91,13 @@ async function syncRecordToGoogleSheets(record: GameResult, webhookUrl?: string)
       timestamp: record.createdAt,
     };
 
-    fetch(url, {
+    await fetch(url, {
       method: 'POST',
+      redirect: 'follow',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }).catch(err => {
-      console.warn('Asynchronous Google Sheets webhook error (ignored to preserve UX):', err.message);
+      console.warn('Google Sheets webhook request error:', err.message);
     });
   } catch (e) {
     console.warn('Sheets sync skipped', e);

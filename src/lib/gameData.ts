@@ -19,7 +19,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     catcher: true,
   },
   quizRequiredCorrect: 4,
-  googleSheetsWebhookUrl: '',
+  googleSheetsWebhookUrl: 'https://script.google.com/macros/s/AKfycbw-95NnIXQVoCeFQuRwpHbTenDHRKtunVuXg-ePmNqVBagcMyRVKuFK9hrlhaJOebtn/exec',
 };
 
 export const GAMES_CATALOG: GameDefinition[] = [
