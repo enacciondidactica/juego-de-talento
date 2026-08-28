@@ -1,0 +1,8 @@
+{
+  "name": "Desafío de Talento",
+  "description": "Plataforma web interactiva de minijuegos con temática de Gestión del Talento Humano y entrega de premios para ferias de empleabilidad.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
