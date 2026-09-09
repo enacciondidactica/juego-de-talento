@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, Sparkles, X, Check, ThumbsDown, ThumbsUp, Info, Trophy, Flame } from 'lucide-react';
+import { ArrowLeft, ThumbsDown, ThumbsUp, Trophy, Flame } from 'lucide-react';
 import { SwipeCard } from '../../types';
 import { DEFAULT_SWIPE_CARDS } from '../../lib/gameData';
 import { sounds } from '../../lib/audio';
@@ -25,7 +25,7 @@ export const SwipeGame: React.FC<SwipeGameProps> = ({
   const startTimeRef = useRef<number>(Date.now());
 
   const currentCard = cards[currentIndex];
-  const requiredCorrect = Math.max(4, Math.ceil(cards.length * 0.7)); // e.g. 6 of 8
+  const requiredCorrect = Math.max(5, Math.ceil(cards.length * 0.7)); // e.g. 6 of 8
 
   const handleVote = (userChosenIsReal: boolean) => {
     if (isAnimating || !currentCard) return;
@@ -78,7 +78,7 @@ export const SwipeGame: React.FC<SwipeGameProps> = ({
           required: requiredCorrect,
         });
       }
-    }, 2000);
+    }, 2200);
   };
 
   // Touch Swipe on Card
@@ -90,9 +90,9 @@ export const SwipeGame: React.FC<SwipeGameProps> = ({
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!touchStartRef.current || isAnimating) return;
     const diffX = e.changedTouches[0].clientX - touchStartRef.current.x;
-    if (diffX > 50) {
+    if (diffX > 45) {
       handleVote(true); // Swipe Right = Realidad
-    } else if (diffX < -50) {
+    } else if (diffX < -45) {
       handleVote(false); // Swipe Left = Mito
     }
     touchStartRef.current = null;
@@ -101,38 +101,38 @@ export const SwipeGame: React.FC<SwipeGameProps> = ({
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col items-center gap-4 py-2 select-none">
       {/* Top Header Bar */}
-      <div className="w-full flex items-center justify-between bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 px-6 shadow-xl">
+      <div className="w-full flex items-center justify-between bg-[#0e0b16] border border-[#60309B]/40 rounded-2xl p-3 px-4 sm:px-6 shadow-xl">
         <button
           onClick={() => {
             sounds.playClick();
             onBack();
           }}
           disabled={isAnimating}
-          className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-300 hover:text-white py-2 px-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer"
+          className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-300 hover:text-white py-2 px-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Volver a Juegos</span>
         </button>
 
-        {/* Progress */}
-        <div className="flex items-center gap-3">
+        {/* Title & Topic */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <span className="text-xs sm:text-sm font-bold text-slate-300">
             Caso {currentIndex + 1} de {cards.length}
           </span>
-          <span className="text-xs sm:text-sm font-bold py-1 px-3 bg-rose-500/20 text-rose-300 rounded-lg border border-rose-500/30">
+          <span className="text-xs sm:text-sm font-bold py-1 px-3 bg-[#60309B]/30 text-white rounded-lg border border-[#60309B]/50">
             {currentCard?.topic}
           </span>
         </div>
 
         {/* Streak & Score */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {streak >= 2 && (
-            <div className="flex items-center gap-1.5 py-1.5 px-3 bg-orange-500/20 border border-orange-500/40 rounded-xl text-orange-300 text-xs sm:text-sm font-bold animate-pulse">
+            <div className="flex items-center gap-1.5 py-1.5 px-3 bg-[#FF7D00]/20 border border-[#FF7D00]/40 rounded-xl text-[#FF7D00] text-xs sm:text-sm font-bold animate-pulse">
               <Flame className="w-4 h-4" />
               <span>x{streak} Racha</span>
             </div>
           )}
-          <div className="flex items-center gap-2 py-1.5 px-4 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300 text-xs sm:text-sm font-extrabold shadow-lg">
+          <div className="flex items-center gap-2 py-1.5 px-3 sm:px-4 bg-[#FF7D00]/20 border border-[#FF7D00]/40 rounded-xl text-[#FF7D00] text-xs sm:text-sm font-black shadow-lg">
             <Trophy className="w-4 h-4" />
             <span>{score} pts</span>
           </div>
@@ -141,64 +141,74 @@ export const SwipeGame: React.FC<SwipeGameProps> = ({
 
       {/* Main Swipe Arena Card */}
       <div
-        className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-12 flex flex-col items-center shadow-2xl relative min-h-[440px] justify-between overflow-hidden"
+        className="w-full bg-[#0a0710] border border-[#60309B]/30 rounded-3xl p-5 sm:p-10 flex flex-col items-center shadow-2xl relative min-h-[460px] justify-between overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Card Stack / Statement */}
+        {/* Game Title Tag */}
+        <div className="w-full flex items-center justify-between pb-3 border-b border-white/10">
+          <span className="text-xs font-black uppercase tracking-wider text-[#FF7D00]">
+            Mito o Realidad de Empleabilidad
+          </span>
+          <span className="text-xs text-slate-400 font-semibold">
+            Desliza o haz clic en los botones
+          </span>
+        </div>
+
+        {/* Card Statement */}
         <div
-          className={`w-full max-w-3xl bg-slate-900/95 border border-white/20 rounded-3xl p-8 sm:p-12 flex flex-col items-center justify-center text-center shadow-2xl transition-all duration-500 transform ${
+          className={`w-full max-w-2xl my-4 bg-[#140b24] border border-[#60309B]/40 rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center text-center shadow-2xl transition-all duration-500 transform ${
             swipeDirection === 'left'
-              ? '-translate-x-full rotate-[-18deg] opacity-0'
+              ? '-translate-x-full rotate-[-16deg] opacity-0'
               : swipeDirection === 'right'
-              ? 'translate-x-full rotate-[18deg] opacity-0'
+              ? 'translate-x-full rotate-[16deg] opacity-0'
               : 'translate-x-0 rotate-0 opacity-100'
           }`}
         >
-          <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mb-6 border border-white/10 shadow-lg">
-            🔥
+          <div className="w-14 h-14 rounded-2xl bg-[#60309B]/40 border border-[#FF7D00]/40 flex items-center justify-center text-2xl mb-4 shadow-lg text-[#FF7D00]">
+            ⚡
           </div>
 
-          <p className="text-xl sm:text-3xl font-black text-white leading-snug mb-6 tracking-tight">
-            "{currentCard?.statement}"
+          <p className="text-lg sm:text-2xl font-black text-white leading-snug mb-5 tracking-tight">
+            {currentCard?.statement}
           </p>
 
-          <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 py-1.5 px-4 rounded-full border border-amber-500/30">
-            ¿Es un MITO de RRHH o una REALIDAD laboral?
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-300 bg-white/5 py-1.5 px-4 rounded-full border border-white/10">
+            ¿Es un MITO de empleabilidad o una REALIDAD laboral?
           </span>
         </div>
 
         {/* Feedback Card Overlay */}
         {feedback && (
-          <div className="absolute inset-x-6 inset-y-6 bg-slate-950/95 backdrop-blur-xl border-2 border-white/25 rounded-3xl p-8 flex flex-col items-center justify-center text-center z-20 animate-in zoom-in-95 shadow-2xl">
-            <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-4 text-3xl shadow-xl ${
+          <div className="absolute inset-x-4 inset-y-4 sm:inset-x-8 sm:inset-y-8 bg-[#07050d]/95 backdrop-blur-xl border-2 border-[#60309B]/60 rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center text-center z-20 animate-fadeIn shadow-2xl">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 text-2xl shadow-xl ${
               feedback.isCorrect
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
-                : 'bg-rose-500/20 border border-rose-500/40 text-rose-400'
+                ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400'
+                : 'bg-rose-500/20 border border-rose-500/50 text-rose-400'
             }`}>
               {feedback.isCorrect ? '✓' : '✗'}
             </div>
-            <h4 className={`text-xl sm:text-2xl font-black mb-3 ${
+            <h4 className={`text-xl sm:text-2xl font-black mb-2 ${
               feedback.isCorrect ? 'text-emerald-400' : 'text-rose-400'
             }`}>
-              {feedback.isCorrect ? '¡Decisión Correcta!' : '¡Oops! Era lo contrario'}
+              {feedback.isCorrect ? '¡Decisión Acertada!' : '¡Era lo contrario!'}
             </h4>
-            <p className="text-sm sm:text-base text-slate-100 leading-relaxed max-w-xl font-medium">
+            <p className="text-sm sm:text-base text-slate-200 leading-relaxed max-w-lg font-medium">
               {feedback.text}
             </p>
           </div>
         )}
 
         {/* Action Decision Buttons */}
-        <div className="w-full max-w-2xl flex items-center justify-center gap-6 mt-8">
+        <div className="w-full max-w-2xl flex items-center justify-center gap-4 sm:gap-6 mt-4">
           {/* Mito (Left / False) */}
           <button
             id="swipe-btn-mito"
             onClick={() => handleVote(false)}
             disabled={isAnimating}
-            className="flex-1 py-5 px-6 rounded-2xl bg-gradient-to-r from-rose-600/40 to-pink-600/40 hover:from-rose-600/60 hover:to-pink-600/60 border-2 border-rose-500/50 text-rose-200 font-black text-base sm:text-lg flex items-center justify-center gap-3 shadow-xl shadow-rose-900/30 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+            className="flex-1 py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-[#60309B]/30 hover:bg-[#60309B]/50 border-2 border-[#60309B] text-slate-100 font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-xl active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
           >
-            <ThumbsDown className="w-6 h-6 text-rose-400" />
+            <ThumbsDown className="w-5 h-5 text-rose-400" />
             <span>ES MITO 👈</span>
           </button>
 
@@ -207,17 +217,17 @@ export const SwipeGame: React.FC<SwipeGameProps> = ({
             id="swipe-btn-realidad"
             onClick={() => handleVote(true)}
             disabled={isAnimating}
-            className="flex-1 py-5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600/40 to-teal-600/40 hover:from-emerald-600/60 hover:to-teal-600/60 border-2 border-emerald-500/50 text-emerald-200 font-black text-base sm:text-lg flex items-center justify-center gap-3 shadow-xl shadow-emerald-900/30 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+            className="flex-1 py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-[#FF7D00]/30 hover:bg-[#FF7D00]/50 border-2 border-[#FF7D00] text-slate-100 font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-xl active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
           >
-            <span>👉 REALIDAD</span>
-            <ThumbsUp className="w-6 h-6 text-emerald-400" />
+            <span>👉 ES REALIDAD</span>
+            <ThumbsUp className="w-5 h-5 text-[#FF7D00]" />
           </button>
         </div>
 
         {/* Footer info */}
-        <div className="w-full max-w-3xl mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-xs sm:text-sm text-slate-300">
-          <span>Meta: <strong>{requiredCorrect} de {cards.length}</strong> aciertos para ganar</span>
-          <span className="font-bold text-rose-300 text-sm sm:text-base">Aciertos: {correctCount}/{cards.length}</span>
+        <div className="w-full max-w-2xl mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+          <span>Meta: <strong className="text-white">{requiredCorrect} de {cards.length}</strong> aciertos para ganar</span>
+          <span className="font-bold text-[#FF7D00] text-xs sm:text-sm">Aciertos: {correctCount}/{cards.length}</span>
         </div>
       </div>
     </div>

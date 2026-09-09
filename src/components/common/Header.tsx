@@ -13,11 +13,17 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   participant,
-  eventName = 'Feria de Empleabilidad 2025',
+  eventName: rawEventName,
   onOpenAdmin,
   onResetToHome,
   prizesRemaining = 42,
 }) => {
+  const currentYear = new Date().getFullYear();
+  // Ensure the display is "Feria de Empleabilidad" or with dynamic current year, replacing any hardcoded 2025
+  const sanitizedEventName = rawEventName
+    ? rawEventName.replace(/2025/g, String(currentYear))
+    : `Feria de Empleabilidad ${currentYear}`;
+
   const [isMuted, setIsMuted] = useState(sounds.getMuted());
 
   const handleToggleSound = () => {
@@ -44,15 +50,15 @@ export const Header: React.FC<HeaderProps> = ({
         }}
         className="cursor-pointer group flex items-center gap-3"
       >
-        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-xl shadow-lg shadow-orange-500/25 border border-white/20 group-hover:scale-105 transition-transform">
+        <div className="w-11 h-11 rounded-2xl bg-[#60309B] border border-[#FF7D00]/50 flex items-center justify-center text-[#FF7D00] text-xl shadow-lg shadow-[#60309B]/40 group-hover:scale-105 transition-transform">
           ⚡
         </div>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-white">
             DESAFÍO DE TALENTO
           </h1>
-          <p className="text-slate-400 text-xs font-semibold tracking-widest uppercase flex items-center gap-2">
-            <span className="text-orange-400 font-bold">BancoSol</span> • {eventName}
+          <p className="text-slate-300 text-xs font-semibold tracking-widest uppercase flex items-center gap-2">
+            <span className="text-[#FF7D00] font-bold">BancoSol</span> • {sanitizedEventName}
           </p>
         </div>
       </div>
@@ -73,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {participant.name}
               </p>
             </div>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center border border-white/20 shadow-md shadow-indigo-500/20 font-bold text-xs text-white">
+            <div className="w-8 h-8 rounded-full bg-[#60309B] border border-[#FF7D00]/40 flex items-center justify-center shadow-md font-bold text-xs text-white">
               {getInitials(participant.name)}
             </div>
           </div>
@@ -98,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
               if (onResetToHome) onResetToHome();
             }}
             title="Cambiar Participante"
-            className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 text-slate-300 hover:text-orange-400 transition-all backdrop-blur-md hidden md:flex items-center gap-1.5 text-xs font-bold"
+            className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 text-slate-300 hover:text-[#FF7D00] transition-all backdrop-blur-md hidden md:flex items-center gap-1.5 text-xs font-bold"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Nuevo Turno</span>
@@ -112,10 +118,10 @@ export const Header: React.FC<HeaderProps> = ({
             sounds.playClick();
             onOpenAdmin();
           }}
-          className="flex items-center gap-1.5 py-2 px-3 sm:px-3.5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 text-slate-300 hover:text-white text-xs font-bold tracking-wide transition-all backdrop-blur-md"
+          className="flex items-center gap-1.5 py-2 px-3 sm:px-3.5 rounded-2xl bg-[#60309B]/20 hover:bg-[#60309B]/40 active:scale-95 border border-[#60309B]/50 text-slate-200 hover:text-white text-xs font-bold tracking-wide transition-all backdrop-blur-md"
         >
-          <Shield className="w-4 h-4 text-orange-400" />
-          <span className="hidden sm:inline">Panel Recrutador</span>
+          <Shield className="w-4 h-4 text-[#FF7D00]" />
+          <span className="hidden sm:inline">Panel Reclutador</span>
         </button>
       </div>
     </header>

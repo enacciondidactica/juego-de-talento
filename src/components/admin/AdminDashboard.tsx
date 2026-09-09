@@ -29,9 +29,11 @@ import {
   Zap,
   Target,
   ArrowRight,
+  Trash2,
+  PlusCircle,
 } from 'lucide-react';
-import { AppConfig, DailyStats, GameResult, GameId, QuizQuestion } from '../../types';
-import { GAMES_CATALOG } from '../../lib/gameData';
+import { AppConfig, DailyStats, GameResult, GameId, QuizQuestion, SwipeCard } from '../../types';
+import { GAMES_CATALOG, DEFAULT_QUIZ_QUESTIONS, DEFAULT_MAZE_QUESTIONS, DEFAULT_SWIPE_CARDS } from '../../lib/gameData';
 import { sounds } from '../../lib/audio';
 
 interface AdminDashboardProps {
@@ -48,10 +50,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'dashboard' | 'participants' | 'config' | 'questions'>('dashboard');
   const [dashboardRightView, setDashboardRightView] = useState<'conversion' | 'hourly' | 'live'>('conversion');
   const [hourlyViewMode, setHourlyViewMode] = useState<'active' | 'all'>('active');
+  const [selectedQuestionGame, setSelectedQuestionGame] = useState<'quiz' | 'maze' | 'swipe'>('quiz');
   const [stats, setStats] = useState<DailyStats | null>(null);
   const [participants, setParticipants] = useState<GameResult[]>([]);
   const [config, setConfig] = useState<AppConfig | null>(null);
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(DEFAULT_QUIZ_QUESTIONS);
+  const [mazeQuestions, setMazeQuestions] = useState<QuizQuestion[]>(DEFAULT_MAZE_QUESTIONS);
+  const [swipeCards, setSwipeCards] = useState<SwipeCard[]>(DEFAULT_SWIPE_CARDS);
   const [searchQuery, setSearchQuery] = useState('');
   const [gameFilter, setGameFilter] = useState('all');
   const [filterPendingPrizes, setFilterPendingPrizes] = useState(false);
@@ -85,7 +90,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (cfgRes.ok) {
         const cfgData = await cfgRes.json();
         setConfig(cfgData.config);
-        setQuizQuestions(cfgData.quizQuestions || []);
+        if (cfgData.quizQuestions && cfgData.quizQuestions.length > 0) {
+          setQuizQuestions(cfgData.quizQuestions);
+        }
+        if (cfgData.mazeQuestions && cfgData.mazeQuestions.length > 0) {
+          setMazeQuestions(cfgData.mazeQuestions);
+        }
+        if (cfgData.swipeCards && cfgData.swipeCards.length > 0) {
+          setSwipeCards(cfgData.swipeCards);
+        }
       }
     } catch (e) {
       console.error('Error fetching admin data', e);
@@ -121,7 +134,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Save Config Changes
-  const handleSaveConfig = async (newConfig: Partial<AppConfig>, newQuestions?: QuizQuestion[]) => {
+  const handleSaveConfig = async (
+    newConfig?: Partial<AppConfig>,
+    newQuizQuestions?: QuizQuestion[],
+    newMazeQuestions?: QuizQuestion[],
+    newSwipeCards?: SwipeCard[]
+  ) => {
     sounds.playClick();
     try {
       const res = await fetch('/api/admin/config', {
@@ -131,8 +149,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          config: newConfig,
-          quizQuestions: newQuestions || quizQuestions,
+          config: newConfig || config,
+          quizQuestions: newQuizQuestions || quizQuestions,
+          mazeQuestions: newMazeQuestions || mazeQuestions,
+          swipeCards: newSwipeCards || swipeCards,
         }),
       });
 
@@ -1224,88 +1244,456 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* TAB 4: PREGUNTAS DE RRHH */}
+        {/* TAB 4: BANCO DE PREGUNTAS Y CASOS DINÁMICOS */}
         {activeTab === 'questions' && (
-          <div className="space-y-4 animate-fadeIn">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-black text-white uppercase tracking-wider">
-                Preguntas del Quiz Express de Talento Humano ({quizQuestions.length})
-              </h4>
+          <div className="space-y-6 animate-fadeIn">
+            {saveSuccessNotice && (
+              <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl text-emerald-200 text-xs font-bold flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                <span>¡Preguntas guardadas y sincronizadas exitosamente!</span>
+              </div>
+            )}
+
+            {/* Sub-selector of Games for Questions */}
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-[#140b24] border border-[#60309B]/40 rounded-3xl">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedQuestionGame('quiz')}
+                  className={`py-2 px-4 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+                    selectedQuestionGame === 'quiz'
+                      ? 'bg-[#FF7D00] text-white shadow-lg shadow-[#FF7D00]/25'
+                      : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                  }`}
+                >
+                  <span>⚡ Quiz Express ({quizQuestions.length})</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedQuestionGame('maze')}
+                  className={`py-2 px-4 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+                    selectedQuestionGame === 'maze'
+                      ? 'bg-[#FF7D00] text-white shadow-lg shadow-[#FF7D00]/25'
+                      : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                  }`}
+                >
+                  <span>🧭 Laberinto del Talento ({mazeQuestions.length})</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedQuestionGame('swipe')}
+                  className={`py-2 px-4 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+                    selectedQuestionGame === 'swipe'
+                      ? 'bg-[#FF7D00] text-white shadow-lg shadow-[#FF7D00]/25'
+                      : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                  }`}
+                >
+                  <span>🔥 Mito o Realidad ({swipeCards.length})</span>
+                </button>
+              </div>
+
               <button
-                onClick={() => handleSaveConfig({}, quizQuestions)}
-                className="py-2 px-4 bg-orange-500 hover:bg-orange-400 text-white font-bold text-xs rounded-xl shadow-lg"
+                onClick={() => handleSaveConfig(config, quizQuestions, mazeQuestions, swipeCards)}
+                className="py-2.5 px-6 bg-gradient-to-r from-[#FF7D00] to-amber-500 hover:from-[#FF7D00]/90 hover:to-amber-500/90 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg cursor-pointer"
               >
-                GUARDAR PREGUNTAS
+                GUARDAR TODOS LOS CAMBIOS
               </button>
             </div>
 
-            <div className="space-y-4">
-              {quizQuestions.map((q, qIdx) => (
-                <div key={q.id || qIdx} className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-orange-400 uppercase">
-                      Pregunta #{qIdx + 1} ({q.category})
-                    </span>
+            {/* SECTION 1: QUIZ EXPRESS */}
+            {selectedQuestionGame === 'quiz' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-black text-white uppercase tracking-wider">
+                      Preguntas de Quiz Express
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Preguntas institucionales y de empleabilidad que aparecen en la trivia.
+                    </p>
                   </div>
-                  <input
-                    type="text"
-                    value={q.question}
-                    onChange={(e) => {
-                      const updated = [...quizQuestions];
-                      updated[qIdx].question = e.target.value;
-                      setQuizQuestions(updated);
+                  <button
+                    onClick={() => {
+                      const newQ: QuizQuestion = {
+                        id: `quiz_${Date.now()}`,
+                        question: 'Nueva pregunta de Quiz...',
+                        category: 'BancoSol',
+                        options: ['Opción A', 'Opción B', 'Opción C', 'Opción D'],
+                        correctIndex: 0,
+                        explanation: 'Explicación del aprendizaje o respuesta correcta.',
+                      };
+                      setQuizQuestions([newQ, ...quizQuestions]);
+                      sounds.playSuccess();
                     }}
-                    className="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-white text-xs font-bold"
-                  />
+                    className="py-2 px-4 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 text-xs font-black flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Agregar Pregunta</span>
+                  </button>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {q.options.map((opt, optIdx) => (
-                      <div key={optIdx} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name={`correct_${qIdx}`}
-                          checked={q.correctIndex === optIdx}
-                          onChange={() => {
-                            const updated = [...quizQuestions];
-                            updated[qIdx].correctIndex = optIdx;
-                            setQuizQuestions(updated);
+                <div className="space-y-4">
+                  {quizQuestions.map((q, qIdx) => (
+                    <div key={q.id || qIdx} className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-[#FF7D00] uppercase">
+                            #{qIdx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={q.category}
+                            onChange={(e) => {
+                              const updated = [...quizQuestions];
+                              updated[qIdx].category = e.target.value;
+                              setQuizQuestions(updated);
+                            }}
+                            placeholder="Categoría / Tema"
+                            className="p-1 px-2.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-slate-300 w-44"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('¿Deseas eliminar esta pregunta?')) {
+                              setQuizQuestions(quizQuestions.filter((_, i) => i !== qIdx));
+                              sounds.playClick();
+                            }
                           }}
-                        />
+                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Eliminar</span>
+                        </button>
+                      </div>
+
+                      <textarea
+                        value={q.question}
+                        rows={2}
+                        onChange={(e) => {
+                          const updated = [...quizQuestions];
+                          updated[qIdx].question = e.target.value;
+                          setQuizQuestions(updated);
+                        }}
+                        className="w-full p-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs font-bold leading-snug resize-none"
+                      />
+
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] uppercase font-black text-slate-400">
+                          Opciones (selecciona el radio de la respuesta correcta):
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {q.options.map((opt, optIdx) => (
+                            <div key={optIdx} className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name={`quiz_correct_${q.id || qIdx}`}
+                                checked={q.correctIndex === optIdx}
+                                onChange={() => {
+                                  const updated = [...quizQuestions];
+                                  updated[qIdx].correctIndex = optIdx;
+                                  setQuizQuestions(updated);
+                                }}
+                                className="w-4 h-4 text-[#FF7D00]"
+                              />
+                              <input
+                                type="text"
+                                value={opt}
+                                onChange={(e) => {
+                                  const updated = [...quizQuestions];
+                                  updated[qIdx].options[optIdx] = e.target.value;
+                                  setQuizQuestions(updated);
+                                }}
+                                className={`w-full p-2 rounded-xl text-xs font-medium ${
+                                  q.correctIndex === optIdx
+                                    ? 'bg-emerald-500/20 border border-emerald-500/50 text-white font-bold'
+                                    : 'bg-white/5 border border-white/10 text-slate-300'
+                                }`}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] uppercase font-black text-slate-400 mb-1">
+                          Explicación Educativa / Retroalimentación:
+                        </label>
                         <input
                           type="text"
-                          value={opt}
+                          value={q.explanation}
                           onChange={(e) => {
                             const updated = [...quizQuestions];
-                            updated[qIdx].options[optIdx] = e.target.value;
+                            updated[qIdx].explanation = e.target.value;
                             setQuizQuestions(updated);
                           }}
-                          className={`w-full p-1.5 rounded-lg text-xs ${
-                            q.correctIndex === optIdx
-                              ? 'bg-emerald-500/20 border border-emerald-500 text-white font-bold'
-                              : 'bg-white/5 border border-white/10 text-slate-300'
-                          }`}
+                          className="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-slate-300 text-xs"
                         />
                       </div>
-                    ))}
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
-                      Explicación / Feedback:
-                    </label>
-                    <input
-                      type="text"
-                      value={q.explanation}
-                      onChange={(e) => {
-                        const updated = [...quizQuestions];
-                        updated[qIdx].explanation = e.target.value;
-                        setQuizQuestions(updated);
-                      }}
-                      className="w-full p-1.5 bg-white/5 border border-white/10 rounded-lg text-slate-300 text-xs"
-                    />
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* SECTION 2: LABERINTO DEL TALENTO */}
+            {selectedQuestionGame === 'maze' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-black text-white uppercase tracking-wider">
+                      Preguntas de Nodos del Laberinto ({mazeQuestions.length})
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Preguntas que aparecen cuando el jugador toca una Estrella ⭐ en el laberinto.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newQ: QuizQuestion = {
+                        id: `maze_${Date.now()}`,
+                        question: 'Nueva pregunta de Laberinto sobre BancoSol...',
+                        category: 'Misión y Visión BancoSol',
+                        options: ['Opción Correcta', 'Opción Incorrecta 1', 'Opción Incorrecta 2'],
+                        correctIndex: 0,
+                        explanation: 'Explicación del valor o pilar institucional.',
+                      };
+                      setMazeQuestions([newQ, ...mazeQuestions]);
+                      sounds.playSuccess();
+                    }}
+                    className="py-2 px-4 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 text-xs font-black flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Agregar Pregunta a Laberinto</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {mazeQuestions.map((q, qIdx) => (
+                    <div key={q.id || qIdx} className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-[#FF7D00] uppercase">
+                            ⭐ Nodo #{qIdx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={q.category}
+                            onChange={(e) => {
+                              const updated = [...mazeQuestions];
+                              updated[qIdx].category = e.target.value;
+                              setMazeQuestions(updated);
+                            }}
+                            placeholder="Categoría"
+                            className="p-1 px-2.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-slate-300 w-48"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('¿Deseas eliminar esta pregunta del laberinto?')) {
+                              setMazeQuestions(mazeQuestions.filter((_, i) => i !== qIdx));
+                              sounds.playClick();
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Eliminar</span>
+                        </button>
+                      </div>
+
+                      <textarea
+                        value={q.question}
+                        rows={2}
+                        onChange={(e) => {
+                          const updated = [...mazeQuestions];
+                          updated[qIdx].question = e.target.value;
+                          setMazeQuestions(updated);
+                        }}
+                        className="w-full p-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs font-bold leading-snug resize-none"
+                      />
+
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] uppercase font-black text-slate-400">
+                          Opciones (selecciona el radio de la respuesta correcta):
+                        </label>
+                        <div className="space-y-2">
+                          {q.options.map((opt, optIdx) => (
+                            <div key={optIdx} className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name={`maze_correct_${q.id || qIdx}`}
+                                checked={q.correctIndex === optIdx}
+                                onChange={() => {
+                                  const updated = [...mazeQuestions];
+                                  updated[qIdx].correctIndex = optIdx;
+                                  setMazeQuestions(updated);
+                                }}
+                                className="w-4 h-4 text-[#FF7D00]"
+                              />
+                              <input
+                                type="text"
+                                value={opt}
+                                onChange={(e) => {
+                                  const updated = [...mazeQuestions];
+                                  updated[qIdx].options[optIdx] = e.target.value;
+                                  setMazeQuestions(updated);
+                                }}
+                                className={`w-full p-2 rounded-xl text-xs font-medium ${
+                                  q.correctIndex === optIdx
+                                    ? 'bg-emerald-500/20 border border-emerald-500/50 text-white font-bold'
+                                    : 'bg-white/5 border border-white/10 text-slate-300'
+                                }`}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] uppercase font-black text-slate-400 mb-1">
+                          Retroalimentación al responder:
+                        </label>
+                        <input
+                          type="text"
+                          value={q.explanation}
+                          onChange={(e) => {
+                            const updated = [...mazeQuestions];
+                            updated[qIdx].explanation = e.target.value;
+                            setMazeQuestions(updated);
+                          }}
+                          className="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-slate-300 text-xs"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SECTION 3: MITO O REALIDAD DE EMPLEABILIDAD */}
+            {selectedQuestionGame === 'swipe' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-black text-white uppercase tracking-wider">
+                      Casos de Mito o Realidad ({swipeCards.length})
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Dilemas que el participante desliza hacia la izquierda (Mito) o derecha (Realidad).
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newCard: SwipeCard = {
+                        id: `swipe_${Date.now()}`,
+                        statement: '“Nuevo enunciado o mito de empleabilidad...”',
+                        isReal: false,
+                        feedback: 'Explicación de por qué es mito o realidad.',
+                        topic: 'Empleabilidad y BancoSol',
+                      };
+                      setSwipeCards([newCard, ...swipeCards]);
+                      sounds.playSuccess();
+                    }}
+                    className="py-2 px-4 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 text-xs font-black flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Agregar Caso</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {swipeCards.map((c, cIdx) => (
+                    <div key={c.id || cIdx} className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-[#FF7D00] uppercase">
+                            Caso #{cIdx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={c.topic}
+                            onChange={(e) => {
+                              const updated = [...swipeCards];
+                              updated[cIdx].topic = e.target.value;
+                              setSwipeCards(updated);
+                            }}
+                            placeholder="Tema / Tópico"
+                            className="p-1 px-2.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-slate-300 w-48"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Toggle isReal */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...swipeCards];
+                              updated[cIdx].isReal = !updated[cIdx].isReal;
+                              setSwipeCards(updated);
+                            }}
+                            className={`py-1 px-3 rounded-lg text-xs font-black uppercase transition-all ${
+                              c.isReal
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                            }`}
+                          >
+                            {c.isReal ? '👉 ES REALIDAD' : '👈 ES MITO'}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (window.confirm('¿Deseas eliminar este caso?')) {
+                                setSwipeCards(swipeCards.filter((_, i) => i !== cIdx));
+                                sounds.playClick();
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Eliminar</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <textarea
+                        value={c.statement}
+                        rows={2}
+                        onChange={(e) => {
+                          const updated = [...swipeCards];
+                          updated[cIdx].statement = e.target.value;
+                          setSwipeCards(updated);
+                        }}
+                        className="w-full p-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs font-bold leading-snug resize-none"
+                      />
+
+                      <div>
+                        <label className="block text-[10px] uppercase font-black text-slate-400 mb-1">
+                          Explicación / Feedback mostrado al jugador:
+                        </label>
+                        <input
+                          type="text"
+                          value={c.feedback}
+                          onChange={(e) => {
+                            const updated = [...swipeCards];
+                            updated[cIdx].feedback = e.target.value;
+                            setSwipeCards(updated);
+                          }}
+                          className="w-full p-2 bg-white/5 border border-white/10 rounded-xl text-slate-300 text-xs"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bottom Save Button */}
+            <div className="pt-4 border-t border-white/10 flex justify-end">
+              <button
+                onClick={() => handleSaveConfig(config, quizQuestions, mazeQuestions, swipeCards)}
+                className="py-3 px-8 bg-gradient-to-r from-[#FF7D00] to-amber-500 hover:from-[#FF7D00]/90 hover:to-amber-500/90 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg cursor-pointer"
+              >
+                GUARDAR Y SINCRONIZAR TODAS LAS PREGUNTAS
+              </button>
             </div>
           </div>
         )}

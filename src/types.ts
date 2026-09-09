@@ -115,6 +115,7 @@ export interface AppConfig {
   activeGames: Record<GameId, boolean>;
   quizRequiredCorrect: number;
   googleSheetsWebhookUrl?: string;
+  mazeQuestions?: QuizQuestion[];
 }
 
 export interface GamePerformanceStat {

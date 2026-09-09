@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
-import { DEFAULT_APP_CONFIG, DEFAULT_QUIZ_QUESTIONS, DEFAULT_PAIR_CARDS, DEFAULT_SWIPE_CARDS, DEFAULT_ROULETTE_SLICES, DEFAULT_CHEST_OPTIONS } from './src/lib/gameData';
+import { DEFAULT_APP_CONFIG, DEFAULT_QUIZ_QUESTIONS, DEFAULT_MAZE_QUESTIONS, DEFAULT_PAIR_CARDS, DEFAULT_SWIPE_CARDS, DEFAULT_ROULETTE_SLICES, DEFAULT_CHEST_OPTIONS } from './src/lib/gameData';
 import { AppConfig, GameResult, Participant, DailyStats } from './src/types';
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -19,6 +19,7 @@ interface DatabaseSchema {
   participants: Participant[];
   results: GameResult[];
   quizQuestions: any[];
+  mazeQuestions: any[];
   pairCards: any[];
   swipeCards: any[];
   rouletteSlices: any[];
@@ -29,11 +30,17 @@ function loadDatabase(): DatabaseSchema {
   if (fs.existsSync(DB_FILE)) {
     try {
       const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+      const loadedConfig = { ...DEFAULT_APP_CONFIG, ...(data.config || {}) };
+      // Sanitize old 2025 title if present
+      if (loadedConfig.eventName && loadedConfig.eventName.includes('2025')) {
+        loadedConfig.eventName = DEFAULT_APP_CONFIG.eventName;
+      }
       return {
-        config: { ...DEFAULT_APP_CONFIG, ...(data.config || {}) },
+        config: loadedConfig,
         participants: data.participants || [],
         results: data.results || [],
         quizQuestions: data.quizQuestions || DEFAULT_QUIZ_QUESTIONS,
+        mazeQuestions: data.mazeQuestions || DEFAULT_MAZE_QUESTIONS,
         pairCards: data.pairCards || DEFAULT_PAIR_CARDS,
         swipeCards: data.swipeCards || DEFAULT_SWIPE_CARDS,
         rouletteSlices: data.rouletteSlices || DEFAULT_ROULETTE_SLICES,
@@ -49,6 +56,7 @@ function loadDatabase(): DatabaseSchema {
     participants: [],
     results: [],
     quizQuestions: DEFAULT_QUIZ_QUESTIONS,
+    mazeQuestions: DEFAULT_MAZE_QUESTIONS,
     pairCards: DEFAULT_PAIR_CARDS,
     swipeCards: DEFAULT_SWIPE_CARDS,
     rouletteSlices: DEFAULT_ROULETTE_SLICES,
@@ -71,7 +79,7 @@ let db = loadDatabase();
 // Sync to Google Sheets helper
 async function syncRecordToGoogleSheets(record: GameResult, webhookUrl?: string) {
   const url = webhookUrl || db.config.googleSheetsWebhookUrl || process.env.GOOGLE_SHEETS_WEBHOOK_URL;
-  if (!url || !url.startsWith('http')) return;
+  if (!url || !url.startsWith('http')) return { success: false, reason: 'URL no configurada' };
 
   try {
     const payload = {
@@ -91,16 +99,18 @@ async function syncRecordToGoogleSheets(record: GameResult, webhookUrl?: string)
       timestamp: record.createdAt,
     };
 
-    await fetch(url, {
+    const response = await fetch(url, {
       method: 'POST',
       redirect: 'follow',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
-    }).catch(err => {
-      console.warn('Google Sheets webhook request error:', err.message);
     });
-  } catch (e) {
-    console.warn('Sheets sync skipped', e);
+
+    const text = await response.text();
+    return { success: response.ok, responseText: text };
+  } catch (e: any) {
+    console.warn('Sheets sync request error:', e?.message || e);
+    return { success: false, error: e?.message || 'Error de conexión' };
   }
 }
 
@@ -122,6 +132,7 @@ async function startServer() {
     res.json({
       config: db.config,
       quizQuestions: db.quizQuestions,
+      mazeQuestions: db.mazeQuestions || DEFAULT_MAZE_QUESTIONS,
       pairCards: db.pairCards,
       swipeCards: db.swipeCards,
       rouletteSlices: db.rouletteSlices,
@@ -481,12 +492,13 @@ async function startServer() {
 
   // Update App Config & Content
   app.post('/api/admin/config', requireAdmin, (req, res) => {
-    const { config, quizQuestions, pairCards, swipeCards, rouletteSlices, chestOptions } = req.body;
+    const { config, quizQuestions, mazeQuestions, pairCards, swipeCards, rouletteSlices, chestOptions } = req.body;
 
     if (config) {
       db.config = { ...db.config, ...config };
     }
     if (quizQuestions) db.quizQuestions = quizQuestions;
+    if (mazeQuestions) db.mazeQuestions = mazeQuestions;
     if (pairCards) db.pairCards = pairCards;
     if (swipeCards) db.swipeCards = swipeCards;
     if (rouletteSlices) db.rouletteSlices = rouletteSlices;

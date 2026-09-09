@@ -13,8 +13,8 @@ import { SkillsCatcherGame } from './components/games/SkillsCatcherGame';
 import { ResultScreen } from './components/result/ResultScreen';
 import { AdminLoginModal } from './components/admin/AdminLoginModal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
-import { Participant, GameId, GameResult, AppConfig, QuizQuestion } from './types';
-import { DEFAULT_APP_CONFIG, DEFAULT_QUIZ_QUESTIONS, GAMES_CATALOG } from './lib/gameData';
+import { Participant, GameId, GameResult, AppConfig, QuizQuestion, SwipeCard } from './types';
+import { DEFAULT_APP_CONFIG, DEFAULT_QUIZ_QUESTIONS, DEFAULT_MAZE_QUESTIONS, DEFAULT_SWIPE_CARDS, GAMES_CATALOG } from './lib/gameData';
 import { sounds } from './lib/audio';
 
 type Screen = 'register' | 'selector' | 'game' | 'result';
@@ -29,6 +29,8 @@ export default function App() {
   // App settings & sound
   const [config, setConfig] = useState<AppConfig>(DEFAULT_APP_CONFIG);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(DEFAULT_QUIZ_QUESTIONS);
+  const [mazeQuestions, setMazeQuestions] = useState<QuizQuestion[]>(DEFAULT_MAZE_QUESTIONS);
+  const [swipeCards, setSwipeCards] = useState<SwipeCard[]>(DEFAULT_SWIPE_CARDS);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
   // Admin state
@@ -47,6 +49,12 @@ export default function App() {
         if (data.config) setConfig(data.config);
         if (data.quizQuestions && data.quizQuestions.length > 0) {
           setQuizQuestions(data.quizQuestions);
+        }
+        if (data.mazeQuestions && data.mazeQuestions.length > 0) {
+          setMazeQuestions(data.mazeQuestions);
+        }
+        if (data.swipeCards && data.swipeCards.length > 0) {
+          setSwipeCards(data.swipeCards);
         }
       }
     } catch (e) {
@@ -234,6 +242,7 @@ export default function App() {
           <>
             {activeGameId === 'maze' && (
               <MazeGame
+                questions={mazeQuestions}
                 onFinish={handleGameFinish}
                 onBack={() => setScreen('selector')}
               />
@@ -271,6 +280,7 @@ export default function App() {
 
             {activeGameId === 'swipe' && (
               <SwipeGame
+                cards={swipeCards}
                 onFinish={handleGameFinish}
                 onBack={() => setScreen('selector')}
               />

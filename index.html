@@ -1,12 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
+    <script>
+      (function() {
+        try {
+          var origFetch = window.fetch;
+          if (origFetch) {
+            var _fetch = typeof origFetch.bind === 'function' ? origFetch.bind(window) : origFetch;
+            try {
+              Object.defineProperty(window, 'fetch', {
+                get: function() { return _fetch; },
+                set: function(val) { _fetch = val; },
+                configurable: true,
+                enumerable: true
+              });
+            } catch (e1) {
+              try {
+                Object.defineProperty(Window.prototype, 'fetch', {
+                  get: function() { return _fetch; },
+                  set: function(val) { _fetch = val; },
+                  configurable: true,
+                  enumerable: true
+                });
+              } catch (e2) {}
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-    <meta name="description" content="An application built with Google AI Studio." />
-    <meta property="og:title" content="My Google AI Studio App" />
-    <meta property="og:description" content="An application built with Google AI Studio." />
+    <title>Desafío de Talento</title>
+    <meta name="description" content="Plataforma web interactiva de minijuegos con temática de Gestión del Talento Humano y entrega de premios para ferias de empleabilidad." />
+    <meta property="og:title" content="Desafío de Talento" />
+    <meta property="og:description" content="Plataforma web interactiva de minijuegos con temática de Gestión del Talento Humano y entrega de premios para ferias de empleabilidad." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
   </head>
